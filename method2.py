@@ -4,6 +4,7 @@ from elm import SimpleELMRegressor
 from elm import ELMRegressor
 from random_hidden_layer import SimpleRandomHiddenLayer
 from random_hidden_layer import RBFRandomHiddenLayer
+from sklearn.linear_model import LogisticRegression
 import numpy as np
 import pandas as pd
 
@@ -32,8 +33,8 @@ for i in range(0, len(trainData) - 3):
     else:
         y[i] = -1
 
-srhl_tanh = SimpleRandomHiddenLayer(n_hidden=20, activation_func='tanh', random_state=0)
-srhl_rbf = RBFRandomHiddenLayer(n_hidden=20*2, gamma=0.1, random_state=0)
+srhl_tanh = SimpleRandomHiddenLayer(n_hidden=100, activation_func='tanh', random_state=0)
+srhl_rbf = RBFRandomHiddenLayer(n_hidden=200*2, gamma=0.1, random_state=0)
 #create ELM instance
 reg = ELMRegressor(srhl_tanh)
 #fit the data
@@ -51,11 +52,14 @@ for i in range(len(testData) - 3):
     ftr6 = float(testData['highest'][i+2] - float(testData['lowest'][i+2]))
     pdt[i] = reg.predict([ftr1, ftr2, ftr3, ftr4, ftr5, ftr6])
 
+print pdt
 #Verify the testing data
 #The 0.01 is the threshold to determine rise or full
 correct = 0
 for i in range(len(testData) - 3):
-    if testData['changerange'][i] >=0 and float(pdt[i]) > 0.01:
+    if testData['changerange'][i] >=0 and float(pdt[i]) >= 0.09:
+        correct += 1
+    elif testData['changerange'][i] < 0 and float(pdt[i]) < 0.09:
         correct += 1
 
 #calculate the result
