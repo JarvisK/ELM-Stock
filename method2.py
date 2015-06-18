@@ -1,6 +1,7 @@
 __author__ = 'jarvis'
 
 from elm import SimpleELMRegressor
+from elm import ELMRegressor
 import numpy as np
 import pandas as pd
 
@@ -30,7 +31,7 @@ for i in range(0, len(trainData) - 3):
         y[i] = -1
 
 #create ELM instance
-reg = SimpleELMRegressor()
+reg = ELMRegressor()
 #fit the data
 reg.fit(X, y)
 
@@ -47,11 +48,11 @@ for i in range(len(testData) - 3):
     pdt[i] = reg.predict([ftr1, ftr2, ftr3, ftr4, ftr5, ftr6])
 
 #Verify the testing data
+#The 0.05 is the threshold to determine rise or full
 correct = 0
 for i in range(len(testData) - 3):
-    if testData['changerange'][i] >=0 and pdt[i] > 0.09:
+    if testData['changerange'][i] >=0 and float(pdt[i]) > 0.05:
         correct += 1
 
 #calculate the result
-print correct / float(len(testData)) * 100
-print correct
+print 'The accuracy is', correct / float(len(testData)) * 100, 'percent'
