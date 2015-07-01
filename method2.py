@@ -2,6 +2,7 @@ __author__ = 'jarvis'
 
 from elm import SimpleELMRegressor
 from elm import ELMRegressor
+from elm import ELMClassifier
 from random_hidden_layer import SimpleRandomHiddenLayer
 from random_hidden_layer import RBFRandomHiddenLayer
 from sklearn.linear_model import LogisticRegression
@@ -12,7 +13,7 @@ import pandas as pd
 trainData = pd.read_csv('training.csv')
 
 #Make features from training data
-#Here I use (close price - open price) and (highest price - lowest price)
+#Here I use (close price - open price) and (highest price - owest price)
 X = np.ndarray(shape = (len(trainData) - 3, 6))
 X.fill(0)
 for i in range(len(trainData) - 3):
@@ -33,16 +34,20 @@ for i in range(0, len(trainData) - 3):
     else:
         y[i] = -1
 
-srhl_tanh = SimpleRandomHiddenLayer(n_hidden=100, activation_func='tanh', random_state=0)
+srhl_tanh = SimpleRandomHiddenLayer(n_hidden=10, activation_func='tanh', random_state=0)
 srhl_rbf = RBFRandomHiddenLayer(n_hidden=200*2, gamma=0.1, random_state=0)
 #create ELM instance
 reg = ELMRegressor(srhl_tanh)
+cla = ELMClassifier(srhl_tanh)
 #fit the data
-reg.fit(X, y)
+reg = reg.fit(X, y)
+cla = cla.fit(X, y)
 
 #Read testing data from testing.csv
 testData = pd.read_csv('testing.csv')
 pdt = np.zeros(len(testData) - 3)
+pdt2 = np.zeros(len(testData) - 3)
+
 for i in range(len(testData) - 3):
     ftr1 = float(testData['close'][i]) - float(testData['open'][i])
     ftr2 = float(testData['close'][i+1]) - float(testData['open'][i+1])
@@ -51,8 +56,10 @@ for i in range(len(testData) - 3):
     ftr5 = float(testData['highest'][i+1] - float(testData['lowest'][i+1]))
     ftr6 = float(testData['highest'][i+2] - float(testData['lowest'][i+2]))
     pdt[i] = reg.predict([ftr1, ftr2, ftr3, ftr4, ftr5, ftr6])
+    pdt2[i] = cla.predict([ftr1, ftr2, ftr3, ftr4, ftr5, ftr6])
 
-print pdt
+#print pdt
+print pdt2
 #Verify the testing data
 #The 0.01 is the threshold to determine rise or full
 correct = 0
@@ -63,4 +70,4 @@ for i in range(len(testData) - 3):
         correct += 1
 
 #calculate the result
-print 'The accuracy is', float(correct / float(len(testData))) * 100, 'percent'
+#print 'The accuracy is', float(correct / float(len(testData))) * 100, 'percent'
