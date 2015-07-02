@@ -1,6 +1,7 @@
 __author__ = 'jarvis'
 
-import random
+from sklearn.kernel_approximation import RBFSampler
+import numpy as np
 
 class OSELMRegressor():
 
@@ -20,15 +21,40 @@ class OSELMRegressor():
         self.ptime = time.clock()
         self.Bias = 0
 
-    def fit(self, X, y):
+    def calculate(self, X, y):
         """
 
         :param X:
         :param y:
         :return:
         """
-        nInputNeurons = len(X[0])
-        IW =
 
-        if(self.ActivationFunction == "rbf"):
-            self.Bias = rand
+        if self.ActivationFunction == "rbf":
+            rbf = RBFSampler(gamma=2, n_components=len(X[0]))
+            H0 = rbf.fit_transform(X[0:self.N0], y)
+
+        M = np.linalg.pinv(H0.transpose() * H0)
+        beta = np.linalg.pinv(H0) * y[0:self.N0]
+
+        for i in range(self.N0, len(X), self.Block):
+            if (i + self.Block - 1) > len(y):
+                Pn = X[i:len(X)]
+                Tn = y[i:len(X)]
+                self.Block = len(Pn)
+                V = 0;
+            else:
+                Pn = X[i:(i+self.Block-1)]
+                Tn = y[i:(i+self.Block-1)]
+
+            if self.ActivationFunction == "rbf":
+                H = RBFSampler(gamma=2, n_components=len(Pn[0])).fit_transform(Pn, Tn)
+
+            M = M - M * H.transpose() * np.linalg.inv((np.eye(self.Block) + H * M * H.transpose())) * H * M
+            beta = beta + M * H.transpose() * (Tn - H * beta)
+
+        if self.ActivationFunction == "rbf":
+            HTrain = RBFun()
+
+        Y = HTrain * beta
+
+        if self.ActivationFunction == "rbf":
