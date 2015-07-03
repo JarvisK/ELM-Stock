@@ -1,6 +1,8 @@
 __author__ = 'jarvis'
 
-from sklearn.kernel_approximation import RBFSampler
+from random_hidden_layer import RBFRandomHiddenLayer
+from sklearn.utils.extmath import safe_sparse_dot
+from scipy.linalg import pinv2
 import numpy as np
 
 class OSELMRegressor():
@@ -18,43 +20,57 @@ class OSELMRegressor():
         self.ActivationFunction = ActivationFunction
         self.N0 = N0
         self.Block = Block
-        self.ptime = time.clock()
+
         self.Bias = 0
 
-    def calculate(self, X, y):
+    def fit(self, X, y):
         """
 
-        :param X:
-        :param y:
+        :param X: feature
+        :param y: target
         :return:
         """
+        X = np.array(X)
+        y = np.array(y)
+        nInputNeurons = len(X[0]) #how many element in one feature
+        nTrainingData = len(X)
+        P0 = X[0:self.N0]
+        T0 = y[0:self.N0]
+        H0 = None
 
-        if self.ActivationFunction == "rbf":
-            rbf = RBFSampler(gamma=2, n_components=len(X[0]))
-            H0 = rbf.fit_transform(X[0:self.N0], y)
+        if self.ActivationFunction == 'rbf':
+            H0 = RBFRandomHiddenLayer(n_hidden=len(P0[0]), gamma=0.1, random_state=0).fit_transform(P0)
 
-        M = np.linalg.pinv(H0.transpose() * H0)
-        beta = np.linalg.pinv(H0) * y[0:self.N0]
+        M = np.linalg.pinv(safe_sparse_dot(H0.transpose(), H0))
+        self.beta = safe_sparse_dot(np.linalg.pinv(H0), T0)
 
-        for i in range(self.N0, len(X), self.Block):
-            if (i + self.Block - 1) > len(y):
-                Pn = X[i:len(X)]
-                Tn = y[i:len(X)]
+        for i in range(self.N0, nTrainingData, self.Block):
+            if(i + self.Block - 1) > nTrainingData:
+                Pn = X[i:nTrainingData]
+                Tn = y[i:nTrainingData]
                 self.Block = len(Pn)
-                V = 0;
             else:
-                Pn = X[i:(i+self.Block-1)]
-                Tn = y[i:(i+self.Block-1)]
+                Pn = X[i:(i+self.Block)]
+                Tn = y[i:(i+self.Block)]
 
-            if self.ActivationFunction == "rbf":
-                H = RBFSampler(gamma=2, n_components=len(Pn[0])).fit_transform(Pn, Tn)
+            if self.ActivationFunction == 'rbf':
+                H = RBFRandomHiddenLayer(n_hidden=len(Pn[0]), gamma=0.1, random_state=0).fit_transform(Pn)
 
-            M = M - M * H.transpose() * np.linalg.inv((np.eye(self.Block) + H * M * H.transpose())) * H * M
-            beta = beta + M * H.transpose() * (Tn - H * beta)
+            tempM = np.linalg.inv(np.eye(self.Block) + (H.dot(M).dot(H.transpose())))
+            tempM = M.dot(H.transpose()).dot(tempM).dot(H).dot(M)
+            M = M - tempM
+            self.beta = self.beta + (M.dot(H.transpose()).dot(Tn - (H.dot(self.beta))))
 
-        if self.ActivationFunction == "rbf":
-            HTrain = RBFun()
+            #M = M - M * H.transpose() * pinv2((np.eye(self.Block) + H * M * H.transpose())) * H * M
+            #self.beta = self.beta + M * H.transpose() * (Tn - H * self.beta)
 
-        Y = HTrain * beta
+        return self
 
-        if self.ActivationFunction == "rbf":
+    def predict(self, X):
+        X = np.array(X)
+
+        if self.ActivationFunction == 'rbf':
+            HResult = RBFRandomHiddenLayer(n_hidden=len(X[0]), gamma=0.1, random_state=0).fit_transform(X)
+
+        #return HResult * self.beta
+        return safe_sparse_dot(HResult, self.beta)
