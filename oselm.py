@@ -40,12 +40,13 @@ class OSELMRegressor():
 
         if self.ActivationFunction == 'rbf':
             H0 = RBFRandomHiddenLayer(n_hidden=len(P0[0]), gamma=0.1, random_state=0).fit_transform(P0)
+            print H0
 
         M = np.linalg.pinv(safe_sparse_dot(H0.transpose(), H0))
         self.beta = safe_sparse_dot(np.linalg.pinv(H0), T0)
 
         for i in range(self.N0, nTrainingData, self.Block):
-            if(i + self.Block - 1) > nTrainingData:
+            if(i + self.Block) > nTrainingData:
                 Pn = X[i:nTrainingData]
                 Tn = y[i:nTrainingData]
                 self.Block = len(Pn)
@@ -54,7 +55,7 @@ class OSELMRegressor():
                 Tn = y[i:(i+self.Block)]
 
             if self.ActivationFunction == 'rbf':
-                H = RBFRandomHiddenLayer(n_hidden=len(Pn[0]), gamma=0.1, random_state=0).fit_transform(Pn)
+                H = RBFRandomHiddenLayer(n_hidden=len(Pn[0]), gamma=0.2, random_state=0).fit_transform(Pn)
 
             tempM = np.linalg.inv(np.eye(self.Block) + (H.dot(M).dot(H.transpose())))
             tempM = M.dot(H.transpose()).dot(tempM).dot(H).dot(M)
@@ -70,7 +71,7 @@ class OSELMRegressor():
         X = np.array(X)
 
         if self.ActivationFunction == 'rbf':
-            HResult = RBFRandomHiddenLayer(n_hidden=len(X[0]), gamma=0.1, random_state=0).fit_transform(X)
+            HResult = RBFRandomHiddenLayer(n_hidden=len(X[0]), gamma=0.2, random_state=0).fit_transform(X)
 
         #return HResult * self.beta
         return safe_sparse_dot(HResult, self.beta)
